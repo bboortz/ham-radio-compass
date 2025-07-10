@@ -14,10 +14,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+
+      - name: Show Java version
+        run: java -version
 
       - name: Install EAS CLI
         run: npm install -g eas-cli
