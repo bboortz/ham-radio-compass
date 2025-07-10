@@ -1,14 +1,15 @@
 name: EAS Build
 
 on:
-  workflow_dispatch:  # Manual trigger from GitHub
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'           # Auto-trigger on version tags like v1.1.0
+      - 'v*'
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,9 +22,7 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Log in to Expo
-        run: eas whoami || eas login --token ${{ secrets.EXPO_TOKEN }}
-
       - name: Build Android (preview)
         run: eas build --platform android --profile preview --non-interactive
-
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
