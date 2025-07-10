@@ -5,7 +5,8 @@ import * as Location from 'expo-location';
 
 export default function App() {
   const [heading, setHeading] = useState(0);
-  const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
+  const [location, setLocation] =
+    useState<Location.LocationObjectCoords | null>(null);
   const [gridLocator, setGridLocator] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [updateTime, setUpdateTime] = useState<number | null>(null);
@@ -13,7 +14,7 @@ export default function App() {
 
   // Compass heading
   useEffect(() => {
-    const sub = Magnetometer.addListener(data => {
+    const sub = Magnetometer.addListener((data) => {
       const angle = calculateHeading(data);
       setHeading(angle);
     });
@@ -43,16 +44,16 @@ export default function App() {
 
           const maiden = latLonToMaiden8(coords.latitude, coords.longitude);
           const formatted =
-            maiden.slice(0, 2).toUpperCase() +   // Field (e.g., JO)
-            maiden.slice(2, 4) +                 // Square (e.g., 52)
-            maiden.slice(4, 6).toLowerCase() +   // Subsquare (e.g., gf)
-            maiden.slice(6, 8);                  // Extended square (e.g., 76)
+            maiden.slice(0, 2).toUpperCase() + // Field (e.g., JO)
+            maiden.slice(2, 4) + // Square (e.g., 52)
+            maiden.slice(4, 6).toLowerCase() + // Subsquare (e.g., gf)
+            maiden.slice(6, 8); // Extended square (e.g., 76)
 
           setLocation(coords);
           setGridLocator(formatted);
           setLastUpdate(new Date(pos.timestamp));
           setUpdateTime(Date.now() - t0);
-        }
+        },
       );
     };
 
@@ -62,7 +63,11 @@ export default function App() {
     };
   }, []);
 
-  const calculateHeading = (data: { x: number; y: number; z: number }): number => {
+  const calculateHeading = (data: {
+    x: number;
+    y: number;
+    z: number;
+  }): number => {
     const { x, y } = data;
     let angle = Math.atan2(-y, x) * (180 / Math.PI);
     angle = angle >= 0 ? angle : 360 + angle;
@@ -95,11 +100,11 @@ export default function App() {
     const lonSquare = Math.floor((lon % 20) / 2);
     const latSquare = Math.floor((lat % 10) / 1);
 
-    const lonSub = Math.floor((((lon % 2) / 2) * 24));
-    const latSub = Math.floor(((lat % 1) * 24));
+    const lonSub = Math.floor(((lon % 2) / 2) * 24);
+    const latSub = Math.floor((lat % 1) * 24);
 
-    const lonExt = Math.floor(((((lon * 60) % 2) * 60) / 5));   // 0–9
-    const latExt = Math.floor(((((lat * 60) % 2.5) * 60) / 5)); // 0–9
+    const lonExt = Math.floor((((lon * 60) % 2) * 60) / 5); // 0–9
+    const latExt = Math.floor((((lat * 60) % 2.5) * 60) / 5); // 0–9
 
     return (
       A[lonField] +
@@ -123,21 +128,26 @@ export default function App() {
           source={{
             uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Compass_rose_en.svg/512px-Compass_rose_en.svg.png',
           }}
-          style={[styles.compass, { transform: [{ rotate: `${-heading}deg` }] }]}
+          style={[
+            styles.compass,
+            { transform: [{ rotate: `${-heading}deg` }] },
+          ]}
         />
       </View>
 
       {location ? (
         <>
-          <Text style={styles.location}>Latitude: {location.latitude.toFixed(5)}</Text>
-          <Text style={styles.location}>Longitude: {location.longitude.toFixed(5)}</Text>
+          <Text style={styles.location}>
+            Latitude: {location.latitude.toFixed(5)}
+          </Text>
+          <Text style={styles.location}>
+            Longitude: {location.longitude.toFixed(5)}
+          </Text>
           <Text style={styles.grid}>Grid: {gridLocator}</Text>
           <Text style={styles.info}>
             Last Update: {lastUpdate?.toLocaleTimeString()}
           </Text>
-          <Text style={styles.info}>
-            Update Time: {updateTime ?? '?'} ms
-          </Text>
+          <Text style={styles.info}>Update Time: {updateTime ?? '?'} ms</Text>
           <Text style={styles.info}>
             Accuracy: ±{location.accuracy?.toFixed(1)} m
           </Text>
@@ -200,4 +210,3 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 });
-
