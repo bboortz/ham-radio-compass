@@ -1,116 +1,21 @@
 ---
-# Shepherd Release 0 POC on ham-radio-compass (3rd pilot after healthy, beaconry).
-# Design: https://github.com/bboortz/shepherd/blob/main/docs/stories/SH-004-r0-poc-on-healthy.md
-
-name: shepherd-poc
-
+# Shepherd caller (SH-007 R1-A). Replaced the R0 copied-scripts flow with
+# a thin uses: of bboortz/shepherd's reusable workflow. SHA-pinned to the
+# commit that shipped v0.5.0-rc1.
+#
+# The SH-005 inject_fixture one-shot capability is dropped by this migration;
+# the R0 live drill (2026-11-21) already closed the exit-criterion. Future
+# injection coverage runs via `make injection-drill` on shepherd itself.
+name: shepherd
 "on":
-  # 06:00 UTC — 30-minute offset from beaconry (05:30), 60-minute from healthy
-  # (05:00). Avoids simultaneous Anthropic API calls on the shared key and
-  # makes per-repo runs easy to tell apart in logs.
   schedule:
     - cron: "0 6 * * *"
-  workflow_dispatch:
-    inputs:
-      inject_fixture:
-        description: "SH-005 live-drill fixture id (e.g. modify-shepherd-yml). Empty = normal run."
-        required: false
-        type: string
-        default: ""
-
+  workflow_dispatch: {}
 permissions:
   contents: write
   pull-requests: write
-
 jobs:
-  scan-and-fix:
-    runs-on: ubuntu-latest
-    env:
-      FINDINGS_PATH: /tmp/findings.json
-      DIFF_PATH: /tmp/diff.patch
-      BASE_BRANCH: main
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Install Trivy (sigstore-verified)
-        if: inputs.inject_fixture == ''
-        run: ./scripts/shepherd-poc/install-trivy.sh
-
-      - name: Trivy fs scan
-        if: inputs.inject_fixture == ''
-        run: |
-          trivy fs \
-            --severity HIGH,CRITICAL \
-            --ignore-unfixed \
-            --format json \
-            --output "$FINDINGS_PATH" \
-            --exit-code 0 \
-            .
-
-      # SH-005 live drill: download the named fixture from shepherd main,
-      # feed it to agent-call.sh --replay. No Anthropic call, no secret.
-      - name: Load SH-005 injection fixture
-        if: inputs.inject_fixture != ''
-        env:
-          FIXTURE_ID: ${{ inputs.inject_fixture }}
-        run: |
-          set -eu
-          mkdir -p /tmp/sh-005
-          # Fixture file names are NN-<id>.json; the dispatch input is the <id>.
-          # List payloads from shepherd main and match.
-          api="https://api.github.com/repos/bboortz/shepherd/contents/tests/injection/payloads"
-          name=$(curl -sfL -H 'Accept: application/vnd.github+json' "$api" \
-            | jq -r --arg id "$FIXTURE_ID" \
-                '.[] | select(.name | test("^[0-9]+-"+$id+"\\.json$")) | .name' | head -1)
-          [ -n "$name" ] || { echo "::error::no fixture matches id '$FIXTURE_ID' on shepherd main"; exit 2; }
-          curl -sfL \
-            "https://raw.githubusercontent.com/bboortz/shepherd/main/tests/injection/payloads/$name" \
-            > /tmp/sh-005/fixture.json
-          echo "→ Loaded fixture $name"
-          jq -r '{id, attacker_goal, expected_outcome}' /tmp/sh-005/fixture.json
-
-      - name: Agent call
-        id: agent
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          set +e
-          if [ -n "${{ inputs.inject_fixture }}" ]; then
-            ./scripts/shepherd-poc/agent-call.sh --replay /tmp/sh-005/fixture.json
-          else
-            ./scripts/shepherd-poc/agent-call.sh
-          fi
-          rc=$?
-          echo "rc=$rc" >> "$GITHUB_OUTPUT"
-          case "$rc" in
-            0) echo "→ Diff produced" ;;
-            1) echo "→ No findings. Nothing to do." ;;
-            2) echo "→ Agent said NO_FIX_POSSIBLE" ;;
-            *) echo "::error::agent-call.sh exit $rc"; exit "$rc" ;;
-          esac
-
-      - name: Validate diff (agent output, manifest-only)
-        if: steps.agent.outputs.rc == '0'
-        run: ./scripts/shepherd-poc/validate.sh "$DIFF_PATH"
-
-      - name: Setup Node.js (needed for regen-lockfile → npm install)
-        if: steps.agent.outputs.rc == '0'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
-        with:
-          node-version: "20"
-
-      - name: Regenerate lockfile (deterministic — replaces DIFF_PATH)
-        if: steps.agent.outputs.rc == '0'
-        run: ./scripts/shepherd-poc/regen-lockfile.sh
-
-      - name: Validate combined diff (manifest + regenerated lockfile)
-        if: steps.agent.outputs.rc == '0'
-        run: ./scripts/shepherd-poc/validate.sh "$DIFF_PATH"
-
-      - name: Open PR
-        if: steps.agent.outputs.rc == '0'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: ./scripts/shepherd-poc/open-pr.sh "$DIFF_PATH"
+  agent:
+    uses: bboortz/shepherd/.github/workflows/reusable-shepherd.yml@3550c80ed15bd8cd9a150dc61dbe2dc9744a90b5
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
