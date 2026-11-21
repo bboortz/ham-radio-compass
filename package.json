@@ -14,12 +14,12 @@
     "expo-location": "~18.1.6",
     "expo-sensors": "~14.1.4",
     "expo-status-bar": "~2.2.3",
-    "react": "19.0.0",
+    "react": "19.3.1",
     "react-native": "0.88.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
-    "@types/react": "~19.0.10",
+    "@types/react": "~19.3.0",
     "typescript": "~5.8.3"
   },
   "private": true,
