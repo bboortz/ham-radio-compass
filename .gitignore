@@ -35,3 +35,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Deprecated layout — pre-Expo-SDK-N snapshot kept on disk, never committed
+OLD/
