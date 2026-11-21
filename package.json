@@ -25,6 +25,6 @@
   "private": true,
   "overrides": {
     "form-data": "^4.0.4",
-    "shell-quote": "1.8.4"
+    "shell-quote": "1.11.0"
   }
 }
