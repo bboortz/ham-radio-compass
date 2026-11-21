@@ -25,6 +25,7 @@
   "private": true,
   "overrides": {
     "form-data": "^4.0.4",
-    "shell-quote": "1.11.0"
+    "shell-quote": "1.11.0",
+    "@xmldom/xmldom": "^0.8.12"
   }
 }
