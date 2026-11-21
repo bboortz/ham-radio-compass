@@ -4,11 +4,11 @@
 # (resolves the PR number by SHA lookup, defers cleanly if no PR found).
 # Pin @main to a tagged SHA from R1 onward.
 name: shepherd-gates
-"on":
+'on':
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   workflow_run:
-    workflows: ["shepherd"]
+    workflows: ['shepherd']
     types: [completed]
 permissions:
   contents: write
