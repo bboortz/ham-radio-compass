@@ -1,0 +1,18 @@
+---
+version: 1
+risk: low
+build: npm run build
+test: npm test
+auto_merge:
+  patch: true
+  minor: true
+  major: false
+security_fix: pr-only
+notify: ntfy
+owner: benni
+
+# Dependabot baseline (SH-011). This repo opts into gated auto-merge.
+# See .github/workflows/dependabot-automerge.yml for the gate logic.
+dependabot:
+  enforce_enabled: true
+  auto_merge: true      # patch+minor + ≤50 non-lockfile lines + ≥24h since release
