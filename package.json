@@ -22,5 +22,8 @@
     "@types/react": "~19.0.10",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "form-data": "^4.0.4"
+  }
 }
