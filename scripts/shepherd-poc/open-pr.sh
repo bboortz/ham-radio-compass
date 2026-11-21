@@ -80,12 +80,25 @@ See [bboortz/shepherd SH-004](https://github.com/bboortz/shepherd/blob/main/docs
 EOF
 )
 
+# Collect the desired labels that actually exist in this repo; gh pr create
+# aborts if any --label value is missing. Not every pilot repo has
+# shepherd-poc / needs-review — tolerate that.
+existing_labels=$(gh label list --limit 100 --json name --jq '.[].name' 2>/dev/null || true)
+label_args=""
+for want in shepherd-poc needs-review; do
+  if printf '%s\n' "$existing_labels" | grep -Fxq "$want"; then
+    label_args="$label_args --label $want"
+  else
+    echo "→ label '$want' not found in repo; skipping (create it with: gh label create $want -R \$REPO)"
+  fi
+done
+
+# shellcheck disable=SC2086  # label_args is a controlled set we built above
 gh pr create \
   --base "$base_branch" \
   --head "$branch" \
   --title "shepherd-poc: automated dependency fix ($timestamp)" \
   --body "$body" \
-  --label shepherd-poc \
-  --label needs-review
+  $label_args
 
 echo "→ PR opened against $base_branch from $branch"
