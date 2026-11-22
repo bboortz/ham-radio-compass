@@ -34,5 +34,8 @@
     "prettier": "^3.10.1",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "form-data": "4.0.4"
+  }
 }
