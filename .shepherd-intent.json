@@ -1,7 +1,7 @@
 {
   "ecosystem": "npm",
-  "package": "shell-quote",
-  "from": "1.8.4",
-  "to": "1.11.0",
-  "cve": "CVE-2026-102422"
+  "package": "tar",
+  "from": "6.2.1",
+  "to": "7.5.19",
+  "cve": "CVE-2026-59873"
 }
