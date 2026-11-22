@@ -49,6 +49,6 @@ jobs:
   gates:
     needs: resolve-pr
     if: needs.resolve-pr.outputs.pr_number != '0'
-    uses: bboortz/shepherd/.github/workflows/reusable-shepherd-gates.yml@af904e2e239e68f8f6be59defd9280734883fc05
+    uses: bboortz/shepherd/.github/workflows/reusable-shepherd-gates.yml@d60e728ff5f6f546d251e9ef9dce741d221c1ee9
     with:
       pr_number: ${{ fromJSON(needs.resolve-pr.outputs.pr_number) }}
