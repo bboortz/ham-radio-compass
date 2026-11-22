@@ -1,0 +1,114 @@
+---
+# HRC Release — gated auto-promotion of dev → main + version tag.
+#
+# Trigger: workflow_dispatch (manual button in GitHub Actions tab).
+# The review the operator does before clicking "Run workflow" is the gate;
+# the workflow itself is mechanics.
+#
+# Does:
+#   1. Checkout dev HEAD.
+#   2. Wait for the "Code Quality Checks" (lint job) run on dev HEAD to be green.
+#   3. Fast-forward main from dev.
+#   4. Read version from package.json and tag v<version>.
+#   5. Push main + tag.
+#
+# Fails loudly if CI on dev is red / not-yet-run (prevents the "operator
+# clicked faster than CI finished" trap).
+
+name: Release
+
+'on':
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch to promote (default: dev)'
+        default: 'dev'
+        required: false
+        type: string
+
+permissions:
+  contents: write # fast-forward main + push tag
+
+jobs:
+  promote:
+    name: Promote dev → main + tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Default GITHUB_TOKEN with contents:write can push to unprotected
+          # branches. If main has a required status check that normal commits
+          # don't satisfy, this step will fail — adjust branch protection or
+          # swap to a PAT: `token: ${{ secrets.GH_PAT }}`.
+
+      - name: Fetch dev HEAD
+        run: |
+          git fetch origin ${{ inputs.ref }}:promote-src --force
+          echo "DEV_SHA=$(git rev-parse promote-src)" >> "$GITHUB_ENV"
+          # HRC's version lives in package.json (no VERSION file).
+          VERSION=$(git show promote-src:package.json | jq -r .version)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Wait for CI green on dev HEAD
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          # Source-of-truth check-run is `lint` (the only job in the "Code
+          # Quality Checks" workflow). Poll for up to RELEASE_CI_WAIT_S
+          # seconds (default 20 min) at POLL_S intervals (default 20s), so
+          # operators can click dispatch before CI has started without
+          # tripping a false "not-yet-run" fail.
+          RELEASE_CI_WAIT_S=${RELEASE_CI_WAIT_S:-1200}
+          POLL_S=${POLL_S:-20}
+          deadline=$(( $(date +%s) + RELEASE_CI_WAIT_S ))
+          while :; do
+            run=$(gh api "repos/${{ github.repository }}/commits/${DEV_SHA}/check-runs" \
+              --jq '[.check_runs[] | select(.name == "lint")] | sort_by(.started_at) | .[-1]' \
+              2>/dev/null || echo "null")
+            status=$(jq -r '.status // "not-yet-run"' <<<"$run")
+            concl=$(jq -r '.conclusion // "-"' <<<"$run")
+            echo "  CI poll: status=${status} conclusion=${concl}"
+            if [[ "$status" == "completed" ]]; then
+              if [[ "$concl" == "success" ]]; then
+                echo "✓ CI green on ${DEV_SHA:0:8}"
+                break
+              fi
+              echo "::error::CI on ${DEV_SHA:0:8} is ${concl}; refusing to promote."
+              exit 1
+            fi
+            if (( $(date +%s) > deadline )); then
+              echo "::error::CI on ${DEV_SHA:0:8} still ${status} after ${RELEASE_CI_WAIT_S}s. Investigate CI run before re-dispatching release."
+              exit 1
+            fi
+            sleep "${POLL_S}"
+          done
+
+      - name: Fast-forward main from dev
+        run: |
+          git config user.name "hrc-release-bot"
+          git config user.email "release-bot@ham-radio-compass.local"
+          git fetch origin main
+          git checkout main
+          git merge --ff-only promote-src
+          git push origin main
+
+      - name: Tag v${{ env.VERSION }}
+        run: |
+          if git rev-parse --verify "v${VERSION}" >/dev/null 2>&1; then
+            echo "::warning::Tag v${VERSION} already exists — skipping tag step."
+          else
+            git tag -a "v${VERSION}" -m "release ${VERSION}" "${DEV_SHA}"
+            git push origin "v${VERSION}"
+            echo "✓ Tagged v${VERSION}"
+          fi
+
+      - name: Summary
+        run: |
+          {
+            echo "## Promoted"
+            echo "- Source: \`${{ inputs.ref }}\` @ \`${DEV_SHA:0:8}\`"
+            echo "- Version: \`${VERSION}\`"
+            echo "- Tag: \`v${VERSION}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
