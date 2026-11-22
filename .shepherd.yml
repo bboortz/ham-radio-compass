@@ -1,8 +1,10 @@
 ---
 version: 1
 risk: low
-build: npm run build
-test: npm test
+# Dev-cycle contract (SH-014 umbrella, HRC onboarded via SH-018).
+# Build/test commands route through the Makefile for contract uniformity.
+build: make build
+test: make test
 auto_merge:
   patch: true
   minor: true
