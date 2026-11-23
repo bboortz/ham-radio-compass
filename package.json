@@ -14,7 +14,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "eas-cli": "^16.15.0",
+    "eas-cli": "^27.11.0",
     "expo": "~53.0.17",
     "expo-location": "~18.1.6",
     "expo-sensors": "~14.1.4",
