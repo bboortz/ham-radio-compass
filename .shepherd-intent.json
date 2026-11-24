@@ -1,7 +1,7 @@
 {
   "ecosystem": "npm",
-  "package": "tar",
-  "from": "6.2.1",
-  "to": "7.5.19",
-  "cve": "CVE-2026-59873"
+  "package": "brace-expansion",
+  "from": "1.1.12",
+  "to": "1.1.19",
+  "cve": "CVE-2026-102276"
 }
