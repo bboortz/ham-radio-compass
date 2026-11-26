@@ -1,7 +1,7 @@
 {
   "ecosystem": "npm",
   "package": "brace-expansion",
-  "from": "1.1.12",
-  "to": "1.1.19",
-  "cve": "CVE-2026-102276"
+  "from": "1.1.19",
+  "to": "1.1.20",
+  "cve": "CVE-2026-102278"
 }
